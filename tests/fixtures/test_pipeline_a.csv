@@ -1,0 +1,5 @@
+image_pair_id,source_path,target_path
+pair_001,data/265_HE_test.jpg,data/265_PGR_test.jpg
+pair_002,data/source1.jpg,data/target1.jpg
+pair_003,data/source2.jpg,data/target2.jpg
+pair_004,data/PCAI0006(SECOND).jpg,data/PCAI0006_CK-PAN(SECOND).jpg

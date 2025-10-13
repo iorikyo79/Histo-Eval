@@ -32,9 +32,10 @@
    - 테스트: 각 파이프라인 모듈(`pipeline_a`, `pipeline_b`, `pipeline_c`, `pipeline_d`)이 `process(image: np.ndarray) -> np.ndarray` 인터페이스를 준수하는지 확인.
    - 수락 기준: 잘못된 입력(예: None, wrong dtype)에 대해 ValueError 또는 TypeError 발생.
 
-5. [ ] PIPELINE A: Baseline++ 기본 동작
+5. [x] PIPELINE A: Baseline++ 기본 동작
    - 테스트: 작은 RGB 샘플 이미지에 대해 `pipeline_a`가 마스크 적용 후 CLAHE된 2D uint8 이미지를 반환.
    - 수락 기준: 반환 이미지가 2D이고 값 범위가 0-255.
+   - 구현: `histomicstk.saliency.tissue_detection.get_tissue_mask` 사용하여 tissue mask 생성 후 CLAHE 적용.
 
 6. [ ] PIPELINE B: 핵 중심 채널 추출 (기본)
    - 테스트: `pipeline_b(..., use_clog=False)`가 헤마톡실린 채널을 2D uint8로 반환.

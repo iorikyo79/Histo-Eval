@@ -59,6 +59,9 @@ coverage.xml
 *.png
 *.jpg
 
+# Output files
+output/
+
 # Type checker
 .mypy_cache/
 .dmypy.json
