@@ -174,7 +174,7 @@
 
 ## 3. 비기능 요구사항 (Non-Functional Requirements)
 
-* **NF-1 (개발 환경)**: Python 3.9+, `histomicstk`, `opencv-python`, `numpy`, `scikit-image`, `pyyaml`. 모든 의존성은 `requirements.txt`로 관리합니다.
+* **NF-1 (개발 환경)**: Python 3.10+, Anaconda 가상환경(`histo-eval`), `histomicstk`, `opencv-python`, `numpy`, `scikit-image`, `pyyaml`. 모든 의존성은 `requirements.txt`로 관리하며, 개발은 반드시 가상환경 내에서 수행합니다.
 * **NF-2 (코드 구조)**: 각 기능(데이터 로딩, 파이프라인, 평가, 리포팅)이 디렉토리별로 명확하게 분리된 모듈형 구조를 가집니다.
 * **NF-3 (설정 관리)**: 데이터 경로, 파이프라인별 파라미터 등 주요 설정값들을 `config.yaml` 파일로 관리하여 실험 재현성을 보장합니다.
 * **NF-4 (문서화)**: `README.md` 파일에 프로젝트 설치, 설정, 실행 방법을 기술합니다. 모든 주요 함수에는 Docstring을 작성합니다.

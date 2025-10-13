@@ -49,16 +49,18 @@ Histo-Eval/
 	README.md
 ```
 
-개발 환경 세팅 (권장)
+개발 환경 세팅 (필수)
 
-1. Python 3.9+ 가상환경 생성
+1. Anaconda 가상환경 생성 및 활성화
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+conda create -n histo-eval python=3.10 -y
+conda activate histo-eval
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
+
+**중요**: 모든 작업은 반드시 `histo-eval` 가상환경 내에서 수행해야 합니다.
 
 2. 테스트 실행
 

@@ -15,11 +15,18 @@ TDD-driven evaluation framework for histopathology image registration preprocess
 ## Quick start
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+# Create and activate Anaconda environment
+conda create -n histo-eval python=3.10 -y
+conda activate histo-eval
+
+# Install dependencies
 pip install -r requirements.txt
+
+# Run tests
 pytest -q -m "not slow"
 ```
+
+**Note**: All development work must be done within the `histo-eval` conda environment.
 
 ## Proposed structure
 
