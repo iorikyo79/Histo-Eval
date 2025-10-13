@@ -1,0 +1,3 @@
+image_pair_id,source_path,target_path
+pair_001,/data/source1.png,/data/target1.png
+pair_002,/data/source2.png,/data/target2.png,extra_value
