@@ -11,12 +11,12 @@
 
 우선순위(Phase 1)
 
-1. [ ] BOOTSTRAP: 프로젝트 초기화 파일 존재 확인
+1. [x] BOOTSTRAP: 프로젝트 초기화 파일 존재 확인
    - 테스트 파일: `tests/test_bootstrap_files.py`
    - 테스트: `requirements.txt`, `config.yaml`(템플릿), `.github/prd.md`, `.github/tdd.md`, `.github/instruction.md` 파일 존재성 검사.
    - 수락 기준: 누락 시 명확한 어설션 실패 메시지.
 
-2. [ ] DATA LOADER: 이미지 쌍 목록 파싱 (CSV)
+2. [x] DATA LOADER: 이미지 쌍 목록 파싱 (CSV)
    - 테스트 파일: `tests/test_data_loader_csv.py`
    - 테스트(긍정): 샘플 CSV를 읽어 `[{image_pair_id, source_path, target_path}, ...]` 리스트 반환.
    - 테스트(부정): 필수 컬럼 누락/빈 값/잘못된 구분자에 대해 `ValueError` 발생.
