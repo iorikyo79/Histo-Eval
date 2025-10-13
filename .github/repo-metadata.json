@@ -1,0 +1,18 @@
+{
+  "description": "TDD-driven evaluation framework for histopathology image registration preprocessing (HistomicsTK/OpenCV/scikit-image).",
+  "topics": [
+    "histopathology",
+    "digital-pathology",
+    "image-processing",
+    "image-registration",
+    "preprocessing",
+    "histomicstk",
+    "opencv",
+    "scikit-image",
+    "numpy",
+    "python",
+    "tdd",
+    "evaluation-framework",
+    "computer-vision"
+  ]
+}

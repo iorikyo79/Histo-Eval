@@ -1,0 +1,53 @@
+name: Update Repo Metadata
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/repo-metadata.json
+      - .github/workflows/update-repo-metadata.yml
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Read metadata
+        id: meta
+        run: |
+          DESC=$(jq -r .description .github/repo-metadata.json)
+          TOPICS=$(jq -c .topics .github/repo-metadata.json)
+          echo "desc=${DESC}" >> $GITHUB_OUTPUT
+          echo "topics=${TOPICS}" >> $GITHUB_OUTPUT
+
+      - name: Update repository description
+        env:
+          GH_TOKEN: ${{ secrets.REPO_ADMIN_TOKEN }}
+          DESC: ${{ steps.meta.outputs.desc }}
+        run: |
+          OWNER=$(echo "$GITHUB_REPOSITORY" | cut -d/ -f1)
+          REPO=$(echo "$GITHUB_REPOSITORY" | cut -d/ -f2)
+          DATA=$(jq -n --arg d "$DESC" '{description: $d}')
+          curl -sS -X PATCH \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${OWNER}/${REPO} \
+            -d "${DATA}"
+
+      - name: Update repository topics
+        env:
+          GH_TOKEN: ${{ secrets.REPO_ADMIN_TOKEN }}
+          TOPICS: ${{ steps.meta.outputs.topics }}
+        run: |
+          OWNER=$(echo "$GITHUB_REPOSITORY" | cut -d/ -f1)
+          REPO=$(echo "$GITHUB_REPOSITORY" | cut -d/ -f2)
+          DATA=$(jq -n --argjson t "$TOPICS" '{names: $t}')
+          curl -sS -X PUT \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${OWNER}/${REPO}/topics \
+            -d "${DATA}"
