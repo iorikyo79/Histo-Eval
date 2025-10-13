@@ -1,0 +1,70 @@
+# Histo-Eval Configuration Template
+# This file defines the settings for preprocessing pipeline evaluation
+
+# Data configuration
+data:
+  # Path to CSV or JSON file containing image pair definitions
+  image_pairs_file: "data/image_pairs.csv"
+  
+  # Base directory for input images
+  input_base_dir: "data/input"
+  
+  # Output directory for processed images
+  output_base_dir: "data/output"
+
+# Pipeline configuration
+pipelines:
+  # List of pipelines to evaluate
+  enabled:
+    - "pipeline_a"  # Baseline++
+    - "pipeline_b"  # Nuclei-focused
+    - "pipeline_c"  # Texture-focused (Eosin)
+    - "pipeline_d"  # Edge-based
+  
+  # Pipeline-specific parameters
+  parameters:
+    pipeline_b:
+      use_clog: false  # Whether to use LoG filter for nuclei enhancement
+    
+    pipeline_d:
+      sigma: 1.5
+      low_threshold: 0.05
+      high_threshold: 0.15
+
+# Metrics configuration
+metrics:
+  # Feature potential score settings
+  feature_potential:
+    log_sigma_min: 2.0
+    log_sigma_max: 4.0
+    corner_detection_method: "fast"  # or "harris"
+  
+  # Entropy calculation settings
+  entropy:
+    bins: 256
+  
+  # Contrast calculation settings
+  contrast:
+    method: "rms"  # Root Mean Square contrast
+
+# Output configuration
+output:
+  # Results CSV file
+  results_file: "results/evaluation_results.csv"
+  
+  # Image format for saved preprocessed images
+  image_format: "png"
+  
+  # Whether to save intermediate processing steps
+  save_intermediate: false
+
+# Processing configuration
+processing:
+  # Enable parallel processing (future feature)
+  parallel: false
+  
+  # Number of worker processes (if parallel enabled)
+  num_workers: 4
+  
+  # Verbose logging
+  verbose: true
