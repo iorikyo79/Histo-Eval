@@ -28,7 +28,7 @@
    - 테스트(부정): 존재하지 않는 경로/손상 파일에서 `FileNotFoundError`/`ValueError`.
    - 수락 기준: 로딩 옵션(그레이스케일/컬러) 플래그에 따른 채널 수 일치.
 
-4. [ ] PIPELINE: 파이프라인 모듈 인터페이스
+4. [x] PIPELINE: 파이프라인 모듈 인터페이스
    - 테스트: 각 파이프라인 모듈(`pipeline_a`, `pipeline_b`, `pipeline_c`, `pipeline_d`)이 `process(image: np.ndarray) -> np.ndarray` 인터페이스를 준수하는지 확인.
    - 수락 기준: 잘못된 입력(예: None, wrong dtype)에 대해 ValueError 또는 TypeError 발생.
 
