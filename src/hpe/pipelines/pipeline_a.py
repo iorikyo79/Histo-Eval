@@ -45,8 +45,10 @@ def process(image: np.ndarray) -> np.ndarray:
         im_gray = image.astype(np.uint8)
         # For grayscale, create a simple threshold-based mask
         im_mask = np.where(im_gray > 10, 255, 0).astype(np.uint8)
+        print(f"---- Input Grayscale image detected. Using simple thresholding for mask.")
     else:
         # RGB input - full Baseline++ pipeline
+        print(f"---- Input RGB image detected. Using histomicstk for mask.")
         try:
             import histomicstk.saliency.tissue_detection as htk_td
             
@@ -58,6 +60,7 @@ def process(image: np.ndarray) -> np.ndarray:
                 sigma=1.5
             )[0]
         except (ImportError, AttributeError, Exception) as e:
+            print(f"---- Input RGB image detected. But histomicstk is not available or failed: {e}")
             # Fallback if histomicstk is not available or fails
             # Use Otsu's thresholding on grayscale
             gray_temp = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
