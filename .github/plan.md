@@ -37,9 +37,11 @@
    - 수락 기준: 반환 이미지가 2D이고 값 범위가 0-255.
    - 구현: `histomicstk.saliency.tissue_detection.get_tissue_mask` 사용하여 tissue mask 생성 후 CLAHE 적용.
 
-6. [ ] PIPELINE B: 핵 중심 채널 추출 (기본)
+6. [x] PIPELINE B: 핵 중심 채널 추출 (기본)
    - 테스트: `pipeline_b(..., use_clog=False)`가 헤마톡실린 채널을 2D uint8로 반환.
    - 수락 기준: 반환 이미지의 통계(분산>0) 확인.
+   - 구현: Reinhard 정규화 + Color deconvolution을 통한 hematoxylin 채널 추출.
+   - 테스트 파일: `tests/test_pipeline_b.py` (18개 테스트 모두 통과)
 
 7. [ ] PIPELINE B: 핵 중심 채널 추출 (LoG 옵션)
    - 테스트: `pipeline_b(..., use_clog=True)`가 정상적으로 실행되고 값 범위가 0-255.
