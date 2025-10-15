@@ -19,7 +19,7 @@ def sample_image_path():
 @pytest.fixture
 def another_sample_image_path():
     """Returns path to another valid sample JPG image."""
-    return Path(__file__).parent.parent / "data" / "265_HE_test.jpg"
+    return Path(__file__).parent.parent / "data" / "source2.jpg"
 
 
 @pytest.fixture
