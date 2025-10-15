@@ -19,7 +19,7 @@ from pathlib import Path
 def sample_rgb_image():
     """Load a real RGB image from data folder."""
     from src.hpe.data.loader import load_image
-    data_path = Path(__file__).parent.parent / "data" / "265_HE_test.jpg"
+    data_path = Path(__file__).parent.parent / "data" / "source1.jpg"
     return load_image(str(data_path))
 
 
