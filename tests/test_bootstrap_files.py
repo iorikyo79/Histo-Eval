@@ -41,5 +41,5 @@ class TestBootstrapFiles:
     
     def test_should_have_instruction_document(self):
         """Instruction document should exist in .github directory."""
-        instruction_path = ".github/instruction.md"
+        instruction_path = ".github/copilot-instruction.md"
         assert os.path.exists(instruction_path), f"Missing required file: {instruction_path}"

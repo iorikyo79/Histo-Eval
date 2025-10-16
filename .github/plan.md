@@ -41,10 +41,12 @@
    - 테스트: `pipeline_b(..., use_clog=False)`가 헤마톡실린 채널을 2D uint8로 반환.
    - 수락 기준: 반환 이미지의 통계(분산>0) 확인.
    - 구현: Reinhard 정규화 + Color deconvolution을 통한 hematoxylin 채널 추출.
-   - 테스트 파일: `tests/test_pipeline_b.py` (18개 테스트 모두 통과)
+   - 테스트 파일: `tests/test_pipeline_b.py` (23개 테스트 모두 통과)
 
-7. [ ] PIPELINE B: 핵 중심 채널 추출 (LoG 옵션)
+7. [x] PIPELINE B: 핵 중심 채널 추출 (LoG 옵션)
    - 테스트: `pipeline_b(..., use_clog=True)`가 정상적으로 실행되고 값 범위가 0-255.
+   - 구현: LoG (Laplacian of Gaussian) 필터를 사용한 핵 중심 강조 기능 추가.
+   - 테스트 파일: `tests/test_pipeline_b.py::TestPipelineBLoGFilter` (6개 테스트 통과)
 
 8. [ ] PIPELINE C: 에오신 채널 추출
    - 테스트: `pipeline_c`가 에오신 채널을 2D uint8로 반환.

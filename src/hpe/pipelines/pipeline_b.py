@@ -46,10 +46,13 @@ def process(image: np.ndarray, use_clog: bool = False) -> np.ndarray:
     
     Args:
         image: Input RGB image as numpy ndarray with shape (H, W, 3)
-        use_clog: If True, apply LoG filter to enhance nucleus centers
+        use_clog: If True, apply LoG (Laplacian of Gaussian) filter to 
+                  enhance nucleus centers. This highlights blob-like structures
+                  at specific scales (nucleus sizes).
         
     Returns:
-        Processed hematoxylin channel image (2D grayscale, uint8)
+        Processed hematoxylin channel image (2D grayscale, uint8).
+        With LoG enabled, nucleus centers are enhanced.
         
     Raises:
         TypeError: If image is None or not a numpy ndarray
@@ -101,13 +104,36 @@ def process(image: np.ndarray, use_clog: bool = False) -> np.ndarray:
         # Uniform image, set to middle gray
         hematoxylin_normalized = np.full_like(hematoxylin, 128)
     
+    # Step 5: Optional LoG (Laplacian of Gaussian) filter
+    # Enhances nucleus centers by detecting blob-like structures
+    if use_clog:
+        # Apply LoG filter to enhance nucleus centers
+        # sigma_min and sigma_max define the range of nucleus sizes to detect
+        # Using sqrt(2) scaling as recommended in literature
+        
+        # Create a mask for the entire image (process all pixels)
+        im_mask = np.ones(hematoxylin_normalized.shape, dtype=bool)
+        
+        result_tuple = htk.filters.shape.clog(
+            hematoxylin_normalized,
+            im_mask,
+            sigma_min=2 * np.sqrt(2),
+            sigma_max=4 * np.sqrt(2)
+        )
+        
+        # clog returns a tuple, extract the LoG filtered image (first element)
+        hematoxylin_log = result_tuple[0] if isinstance(result_tuple, tuple) else result_tuple
+        
+        # Normalize LoG output to 0-255 range
+        log_min = hematoxylin_log.min()
+        log_max = hematoxylin_log.max()
+        
+        if log_max > log_min:
+            hematoxylin_normalized = (hematoxylin_log - log_min) / (log_max - log_min) * 255
+        else:
+            hematoxylin_normalized = np.full_like(hematoxylin_log, 128)
+    
     # Convert to uint8
     result = hematoxylin_normalized.astype(np.uint8)
-    
-    # Step 5: Optional LoG filter (to be implemented in item 7)
-    if use_clog:
-        # Placeholder: LoG filter will be implemented in next TODO item
-        # For now, just return the hematoxylin channel
-        pass
     
     return result
