@@ -127,47 +127,113 @@
     ```
 
 #### **FR-7: 파이프라인 D (경계 기반 정합)**
-* **설명**: 색상 정규화 후, 조직의 구조적 윤곽선을 강조하기 위해 경계 검출 알고리즘을 적용합니다.
+* **설명**: CLAHE로 대비를 향상시킨 후 Gaussian blur로 노이즈를 제거하고, Sobel 또는 Canny 에지 검출을 적용합니다. 배경 필터링으로 흰 배경의 에지를 제거합니다.
+* **주요 특징**:
+    * CLAHE → Gaussian Blur → Edge Detection (Sobel/Canny) → Background Filtering
+    * `edge_method='sobel'` (기본값): Otsu threshold 사용, 높은 검출율 (6~23%)
+    * `edge_method='canny'`: Median 기반 adaptive threshold, 선택적 검출 (0.2~3.5%)
 * **샘플 코드**:
     ```python
     import cv2
     import numpy as np
-    import histomicstk as htk
-    from skimage.feature import canny # Note: Using scikit-image for Canny detector
+    from skimage.feature import canny
 
-    def pipeline_d(im_rgb: np.ndarray) -> np.ndarray:
-        # 1. Get tissue mask
-        im_mask = htk.saliency.get_tissue_mask(
-            im_rgb, deconvolve_first=True
-        )[0]
-        
-        # 2. Convert to grayscale
+    def pipeline_d(im_rgb: np.ndarray, edge_method: str = "sobel") -> np.ndarray:
+        # 1. Convert to grayscale
         im_gray = cv2.cvtColor(im_rgb, cv2.COLOR_RGB2GRAY)
-        im_masked_gray = (im_gray * (im_mask / 255)).astype(np.uint8)
-
-        # 3. Apply Canny edge detector
-        im_edges = canny(im_masked_gray, sigma=1.5, low_threshold=0.05, high_threshold=0.15)
         
-        # Convert boolean to uint8 for saving
-        return (im_edges * 255).astype(np.uint8)
+        # 2. Apply CLAHE
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        im_enhanced = clahe.apply(im_gray)
+        
+        # 3. Gaussian blur
+        im_blurred = cv2.GaussianBlur(im_enhanced, ksize=(0, 0), sigmaX=1.2)
+        
+        # 4. Edge detection
+        if edge_method == "sobel":
+            sobelx = cv2.Sobel(im_blurred, cv2.CV_64F, 1, 0, ksize=3)
+            sobely = cv2.Sobel(im_blurred, cv2.CV_64F, 0, 1, ksize=3)
+            gradient = np.sqrt(sobelx**2 + sobely**2)
+            gradient = np.clip(gradient, 0, 255).astype(np.uint8)
+            _, im_edges = cv2.threshold(gradient, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        else:  # canny
+            im_norm = im_blurred.astype(np.float32) / 255.0
+            median_val = float(np.median(im_norm))
+            low_th = np.clip(0.66 * median_val, 0.05, 0.3)
+            high_th = np.clip(1.33 * median_val, low_th + 0.05, 0.5)
+            im_edges = canny(im_norm, sigma=1.5, low_threshold=low_th, high_threshold=high_th)
+            im_edges = (im_edges * 255).astype(np.uint8)
+        
+        # 5. Background suppression
+        background_mask = im_enhanced > 245
+        im_edges = im_edges & (~background_mask)
+        
+        return im_edges.astype(np.uint8)
+    ```
+
+#### **FR-8: 파이프라인 E (노이즈 필터링된 경계 기반 정합)**
+* **설명**: 파이프라인 D의 결과에서 작은 노이즈성 에지 조각을 제거하여 더 깨끗한 구조적 에지만 남깁니다.
+* **주요 특징**:
+    * Pipeline D 출력 → Connected Components Analysis → 크기 기반 필터링
+    * `min_component_size` (기본값: 50픽셀): 이보다 작은 연결 요소는 제거
+    * `filter_method='connected_components'` (기본값): 정확한 크기 기준 필터링
+    * `filter_method='morphology'`: 간단한 형태학적 Opening 연산 사용
+* **샘플 코드**:
+    ```python
+    import cv2
+    import numpy as np
+    from pipeline_d import process as pipeline_d_process
+
+    def pipeline_e(
+        im_rgb: np.ndarray, 
+        edge_method: str = "sobel",
+        filter_method: str = "connected_components",
+        min_component_size: int = 50
+    ) -> np.ndarray:
+        # 1. Get edges from Pipeline D
+        im_edges = pipeline_d_process(im_rgb, edge_method=edge_method)
+        
+        # 2. Filter small noise
+        if filter_method == "connected_components":
+            # Connected Components Analysis
+            num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(
+                im_edges, connectivity=8
+            )
+            
+            # Keep only large components
+            im_filtered = np.zeros_like(im_edges)
+            for i in range(1, num_labels):  # Skip background (0)
+                if stats[i, cv2.CC_STAT_AREA] >= min_component_size:
+                    im_filtered[labels == i] = 255
+                    
+        else:  # morphology
+            # Morphological Opening
+            kernel_size = max(3, int(np.sqrt(min_component_size) / 2))
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
+            im_filtered = cv2.morphologyEx(im_edges, cv2.MORPH_OPEN, kernel)
+        
+        return im_filtered.astype(np.uint8)
     ```
 
 ### 2.3. 파이프라인 실행기 및 결과 생성기
-* **FR-8**: `run_evaluation.py` 스크립트를 통해 전체 평가 프로세스를 실행합니다.
-* **FR-9**: 평가할 파이프라인과 데이터셋 경로는 `config.yaml` 파일로 지정합니다.
-* **FR-10**: 각 이미지 쌍에 대해 선택된 파이프라인을 적용하고, **전처리된 결과 이미지를 지정된 경로에 저장**합니다.
-* **FR-11**: 전처리된 결과 이미지로부터 자체 평가 지표를 계산하고 결과를 저장합니다.
+* **FR-9**: `run_evaluation.py` 스크립트를 통해 전체 평가 프로세스를 실행합니다.
+* **FR-9**: `run_evaluation.py` 스크립트를 통해 전체 평가 프로세스를 실행합니다.
+* **FR-10**: 평가할 파이프라인과 데이터셋 경로는 `config.yaml` 파일로 지정합니다.
+* **FR-11**: 각 이미지 쌍에 대해 선택된 파이프라인을 적용하고, **전처리된 결과 이미지를 지정된 경로에 저장**합니다.
+* **FR-12**: 전처리된 결과 이미지로부터 자체 평가 지표를 계산하고 결과를 저장합니다.
 
 ### 2.4. 평가 지표 (Proxy Metrics)
-* **FR-12: 특징점 잠재력 (Feature Potential Score)**
+* **FR-13: 특징점 잠재력 (Feature Potential Score)**
     * LoG 필터 응답이나 FAST 코너 개수를 측정하여 이미지 내 특징점 후보의 풍부함을 정량화합니다.
-* **FR-13: 이미지 엔트로피 (Image Entropy)**
+* **FR-13: 특징점 잠재력 (Feature Potential Score)**
+    * LoG 필터 응답이나 FAST 코너 개수를 측정하여 이미지 내 특징점 후보의 풍부함을 정량화합니다.
+* **FR-14: 이미지 엔트로피 (Image Entropy)**
     * 이미지의 정보량을 측정하여 너무 단조롭거나 노이즈가 과하지 않은지 평가합니다.
-* **FR-14: 이미지 대비 (Image Contrast)**
+* **FR-15: 이미지 대비 (Image Contrast)**
     * RMS contrast 등을 측정하여 특징점 검출에 유리한 환경인지를 간접적으로 평가합니다.
 
 ### 2.5. 결과 리포팅
-* **FR-15**: 모든 실험 결과를 단일 CSV 파일로 출력하며, 컬럼은 다음과 같습니다.
+* **FR-16**: 모든 실험 결과를 단일 CSV 파일로 출력하며, 컬럼은 다음과 같습니다.
     > `image_pair_id`, `pipeline_name`, `output_path_source`, `output_path_target`, `feature_potential_score`, `image_entropy`, `image_contrast`, `processing_time`
 
 ---
@@ -187,9 +253,10 @@
     * 프로젝트 기본 구조 설정 (`config.yaml`, `requirements.txt`)
     * 데이터 로더 및 결과 CSV 저장 기능 구현
     * **파이프라인 A (Baseline++)** 및 **파이프라인 B (핵 중심)** 구현
-    * 모든 Proxy Metrics (FR-12, 13, 14) 계산 모듈 구현
+    * 모든 Proxy Metrics (FR-13, 14, 15) 계산 모듈 구현
 * **Phase 2: 전체 파이프라인 완성 및 테스트**
-    * **파이프라인 C (텍스처 중심)** 및 **파이프라인 D (경계 기반)** 구현
+    * **파이프라인 C (텍스처 중심)** 구현
+    * **파이프라인 D (경계 기반)** 및 **파이프라인 E (노이즈 필터링)** 구현
     * 샘플 데이터셋에 대한 전체 파이프라인 실행 및 결과 리포팅 기능 검증
     * `README.md` 문서 초안 작성 및 코드 리뷰
 

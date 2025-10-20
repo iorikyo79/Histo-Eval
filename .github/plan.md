@@ -63,20 +63,31 @@
    - 검증 스크립트: `tests/verify_pipeline_d.py` (실제 이미지로 동작 검증 완료)
    - 성능: Sobel 방법으로 6.42~22.67% 에지 검출 (Canny는 0.19~3.47%)
 
-10. [ ] METRICS: Feature Potential Score 계산기
+10. [ ] PIPELINE E: 노이즈 필터링된 경계 기반 출력
+   - 테스트: `pipeline_e`가 깨끗한 에지 이미지를 2D uint8(0 또는 255)로 반환.
+   - 구현: Pipeline D 출력 → Connected Components Analysis → 크기 기반 필터링 → 깨끗한 에지 맵.
+   - 옵션: 
+     - `filter_method='connected_components'` (기본값): 정확한 크기 기준 필터링
+     - `filter_method='morphology'`: 형태학적 Opening 연산
+     - `min_component_size=50` (기본값): 최소 연결 요소 크기 (픽셀 수)
+   - 테스트 파일: `tests/test_pipeline_e.py` (최소 22개 테스트)
+   - 검증 스크립트: `tests/verify_pipeline_e.py` (실제 이미지로 동작 검증)
+   - 목표: Pipeline D의 노이즈성 작은 점들을 제거하여 구조적 에지만 추출
+
+11. [ ] METRICS: Feature Potential Score 계산기
    - 테스트 파일: `tests/test_metrics_feature_potential.py`
    - 테스트: grayscale 입력에서 코너/LoG 기반 스코어를 스칼라(float)로 반환.
    - 수락 기준: 균일 이미지에서는 0 또는 매우 작은 값, 텍스처 이미지에서는 더 큰 값.
 
-11. [ ] METRICS: Image Entropy
+12. [ ] METRICS: Image Entropy
    - 테스트 파일: `tests/test_metrics_entropy.py`
    - 테스트: 0~255 범위 이미지에서 엔트로피가 0 이상, 균일 이미지의 엔트로피 < 텍스처 이미지 엔트로피.
 
-12. [ ] METRICS: Image Contrast (RMS)
+13. [ ] METRICS: Image Contrast (RMS)
    - 테스트 파일: `tests/test_metrics_contrast.py`
    - 테스트: 균일 이미지 대비≈0, 가장자리/체커보드 이미지 대비>0.
 
-13. [ ] RUNNER: `run_evaluation.py` 기본 실행 흐름 (dry-run)
+14. [ ] RUNNER: `run_evaluation.py` 기본 실행 흐름 (dry-run)
 	- 테스트: 구성 파일(`config.yaml` 템플릿)을 읽고, 데이터 로더 및 선택된 파이프라인을 로드하는 'dry-run'이 성공.
 	- 수락 기준: 파일 생성 없이 설정 파싱 및 파이프라인 인스턴스화 성공.
 
@@ -90,8 +101,9 @@
 
 우선순위(Phase 2)
 
-16. [ ] PIPELINE C/D: 성능 개선 및 에지케이스 테스트
-	- 테스트: 다양한 크기/밝기 이미지에 대해 안정적 동작.
+16. [ ] PIPELINE E: 성능 최적화 및 파라미터 튜닝
+	- 테스트: 다양한 min_component_size 값으로 최적 파라미터 탐색.
+	- 목표: 노이즈 제거와 구조 보존의 최적 균형점 찾기.
 
 17. [ ] PARALLEL: 멀티프로세싱 실험 실행(옵션)
 	- 테스트: `multiprocessing`을 이용한 간단한 배치 처리 구현 테스트.
