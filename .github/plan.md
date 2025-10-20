@@ -55,8 +55,13 @@
    - 검증 스크립트: `tests/verify_pipeline_c.py` (실제 이미지로 동작 검증 완료)
    - 참고: Pipeline C는 세포질 분석이므로 LoG 필터 옵션은 불필요 (핵 강조는 Pipeline B에서만 의미있음)
 
-9. [ ] PIPELINE D: 경계 기반 출력
+9. [x] PIPELINE D: 경계 기반 출력
    - 테스트: `pipeline_d`가 에지 이미지를 2D uint8(0 또는 255)로 반환.
+   - 구현: CLAHE → Gaussian Blur → Sobel/Canny edge detection → 배경 필터링.
+   - 옵션: `edge_method='sobel'` (기본값, Otsu threshold) 또는 `'canny'` (median-based adaptive threshold).
+   - 테스트 파일: `tests/test_pipeline_d.py` (22개 테스트 모두 통과)
+   - 검증 스크립트: `tests/verify_pipeline_d.py` (실제 이미지로 동작 검증 완료)
+   - 성능: Sobel 방법으로 6.42~22.67% 에지 검출 (Canny는 0.19~3.47%)
 
 10. [ ] METRICS: Feature Potential Score 계산기
    - 테스트 파일: `tests/test_metrics_feature_potential.py`
