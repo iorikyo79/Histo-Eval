@@ -33,12 +33,13 @@ def process(
     Process an image using Pipeline D (Edge-based).
     
     Workflow:
-    1. Convert to grayscale
-    2. Apply CLAHE for contrast enhancement
-    3. Apply Gaussian blur (sigma=1.2) for noise reduction
-    4. Edge detection (Sobel or Canny)
-    5. Threshold to binary edge map
-    6. Optional simple background suppression (white background removal)
+    1. Validate input (image type, dimensions, edge_method parameter)
+    2. Convert to grayscale
+    3. Apply CLAHE for contrast enhancement (clipLimit=2.0, tileGridSize=8x8)
+    4. Apply Gaussian blur (sigma=1.2) for noise reduction
+    5. Edge detection (Sobel with Otsu threshold or Canny with adaptive threshold)
+    6. Background suppression (remove edges in white regions >245 or use tissue mask)
+    7. Convert to binary uint8 (0 or 255)
     
     Args:
         image: Input RGB image as numpy ndarray with shape (H, W, 3) or (H, W)

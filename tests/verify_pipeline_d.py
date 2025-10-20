@@ -103,7 +103,8 @@ def verify_pipeline_d(
             print(f"중간 단계 폴더: {intermediates_dir}")
     
     # 1. CSV 파일에서 이미지 쌍 로드
-    csv_path = project_root / "tests" / "fixtures" / "test_pipeline_a.csv"
+    #csv_path = project_root / "tests" / "fixtures" / "test_pipeline_a.csv"
+    csv_path = project_root / "tests" / "fixtures" / "test_pipeline_beta.csv"
     print(f"\n1. CSV 파일 로드: {csv_path}")
     
     try:
