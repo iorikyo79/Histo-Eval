@@ -7,7 +7,7 @@ According to plan.md, this test should check for:
 - config.yaml (template)
 - .github/prd.md
 - .github/tdd.md
-- .github/instruction.md
+- .github/copilot-instructions.md
 
 Acceptance criteria: Clear assertion failure messages when files are missing.
 """
@@ -41,5 +41,5 @@ class TestBootstrapFiles:
     
     def test_should_have_instruction_document(self):
         """Instruction document should exist in .github directory."""
-        instruction_path = ".github/copilot-instruction.md"
+        instruction_path = ".github/copilot-instructions.md"
         assert os.path.exists(instruction_path), f"Missing required file: {instruction_path}"
