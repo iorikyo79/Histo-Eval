@@ -43,7 +43,7 @@ def verify_pipeline_b(save_outputs: bool = True, test_log: bool = True):
     
     # 1. CSV 파일에서 이미지 쌍 로드
     #csv_path = project_root / "tests" / "fixtures" / "test_pipeline_a.csv"
-    csv_path = project_root / "tests" / "fixtures" / "test_pipeline_beta.csv"
+    csv_path = project_root / "tests" / "fixtures" / "test_pipeline.csv"
     print(f"\n1. CSV 파일 로드: {csv_path}")
     
     try:

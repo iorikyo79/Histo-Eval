@@ -1,0 +1,9 @@
+image_pair_id,source_path,target_path
+pair_001,data/source1.jpg,data/target1.jpg
+pair_002,data/source2.jpg,data/target2.jpg
+pair_003,data/source3.jpg,data/target3.jpg
+pair_004,data/source4.jpg,data/target4.jpg
+pair_005,data/beta/0_HE_val_level4.jpg,data/beta/0_KI67_val_level4.jpg
+pair_006,data/beta/22_HE_val_level4.jpg,data/beta/22_PGR_val_level4.jpg
+pair_007,data/beta/28_HE_val_level4.jpg,data/beta/28_ER_val_level4.jpg
+pair_008,data/beta/35_HE_val_level4.jpg,data/beta/35_PGR_val_level4.jpg

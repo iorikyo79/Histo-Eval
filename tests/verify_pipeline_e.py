@@ -53,7 +53,7 @@ def verify_pipeline_e(
         print(f"\n출력 폴더: {output_dir}")
     
     # 1. CSV 파일에서 이미지 쌍 로드
-    csv_path = project_root / "tests" / "fixtures" / "test_pipeline_beta.csv"
+    csv_path = project_root / "tests" / "fixtures" / "test_pipeline.csv"
     print(f"\n1. CSV 파일 로드: {csv_path}")
     
     try:
@@ -313,7 +313,7 @@ if __name__ == "__main__":
                         help="최소 컴포넌트 크기 픽셀 수 (기본값: 75)")
     parser.add_argument("--test-fusion", action="store_true",
                         help="Fusion 모드 테스트 활성화")
-    parser.add_argument("--blend-alpha", type=float, default=0.7,
+    parser.add_argument("--blend-alpha", type=float, default=0.8,
                         help="Fusion 모드의 블렌딩 가중치 (0.0~1.0, 기본값: 0.7)")
     args = parser.parse_args()
     
