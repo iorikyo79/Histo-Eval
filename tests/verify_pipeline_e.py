@@ -20,8 +20,10 @@ from src.hpe.pipelines.pipeline_d import process as pipeline_d_process
 def verify_pipeline_e(
     save_outputs: bool = True,
     edge_method: str = "sobel",
-    filter_method: str = "connected_components",
-    min_component_size: int = 50
+    filter_method: str = "morphology",
+    min_component_size: int = 50,
+    test_fusion: bool = False,
+    blend_alpha: float = 0.7
 ):
     """Pipeline E의 동작을 실제 이미지로 검증
     
@@ -30,6 +32,8 @@ def verify_pipeline_e(
         edge_method: 에지 검출 방법 ('sobel' 또는 'canny')
         filter_method: 필터링 방법 ('connected_components' 또는 'morphology')
         min_component_size: 최소 컴포넌트 크기 (픽셀 수)
+        test_fusion: True인 경우 fusion 모드도 함께 테스트
+        blend_alpha: fusion 모드의 블렌딩 가중치 (0.0~1.0)
     """
     
     print("=" * 70)
@@ -37,6 +41,8 @@ def verify_pipeline_e(
     print(f"  edge_method={edge_method}")
     print(f"  filter_method={filter_method}")
     print(f"  min_component_size={min_component_size}")
+    if test_fusion:
+        print(f"  fusion 모드 활성화: blend_alpha={blend_alpha}")
     print("=" * 70)
     
     # Output 폴더 생성
@@ -86,6 +92,19 @@ def verify_pipeline_e(
                 filter_method=filter_method,
                 min_component_size=min_component_size
             )
+            
+            # Fusion 모드 테스트 (선택적)
+            source_e_fusion = None
+            if test_fusion:
+                source_e_fusion = process(
+                    source_img,
+                    edge_method=edge_method,
+                    filter_method=filter_method,
+                    min_component_size=min_component_size,
+                    blend_with_original=True,
+                    blend_alpha=blend_alpha
+                )
+                print(f"   - Fusion 처리 완료: {source_e_fusion.shape}, dtype={source_e_fusion.dtype}")
             
             print(f"   - Source 처리 완료: {source_e.shape}, dtype={source_e.dtype}")
             
@@ -147,7 +166,14 @@ def verify_pipeline_e(
                 source_e_path = output_dir / source_e_filename
                 cv2.imwrite(str(source_e_path), source_e)
                 
-                print(f"   → 저장: {source_d_filename}, {source_e_filename}")
+                # Fusion 결과 저장 (선택적)
+                if source_e_fusion is not None:
+                    source_fusion_filename = f"{pair_id}_source_pipeline_e_fusion.png"
+                    source_fusion_path = output_dir / source_fusion_filename
+                    cv2.imwrite(str(source_fusion_path), source_e_fusion)
+                    print(f"   → 저장: {source_d_filename}, {source_e_filename}, {source_fusion_filename}")
+                else:
+                    print(f"   → 저장: {source_d_filename}, {source_e_filename}")
                 
         except Exception as e:
             print(f"   ✗ Source 이미지 처리 오류: {e}")
@@ -168,6 +194,19 @@ def verify_pipeline_e(
                 filter_method=filter_method,
                 min_component_size=min_component_size
             )
+            
+            # Fusion 모드 테스트 (선택적)
+            target_e_fusion = None
+            if test_fusion:
+                target_e_fusion = process(
+                    target_img,
+                    edge_method=edge_method,
+                    filter_method=filter_method,
+                    min_component_size=min_component_size,
+                    blend_with_original=True,
+                    blend_alpha=blend_alpha
+                )
+                print(f"   - Fusion 처리 완료: {target_e_fusion.shape}, dtype={target_e_fusion.dtype}")
             
             print(f"   - Target 처리 완료: {target_e.shape}, dtype={target_e.dtype}")
             
@@ -229,7 +268,14 @@ def verify_pipeline_e(
                 target_e_path = output_dir / target_e_filename
                 cv2.imwrite(str(target_e_path), target_e)
                 
-                print(f"   → 저장: {target_d_filename}, {target_e_filename}")
+                # Fusion 결과 저장 (선택적)
+                if target_e_fusion is not None:
+                    target_fusion_filename = f"{pair_id}_target_pipeline_e_fusion.png"
+                    target_fusion_path = output_dir / target_fusion_filename
+                    cv2.imwrite(str(target_fusion_path), target_e_fusion)
+                    print(f"   → 저장: {target_d_filename}, {target_e_filename}, {target_fusion_filename}")
+                else:
+                    print(f"   → 저장: {target_d_filename}, {target_e_filename}")
                 
         except Exception as e:
             print(f"   ✗ Target 이미지 처리 오류: {e}")
@@ -263,14 +309,20 @@ if __name__ == "__main__":
     parser.add_argument("--filter-method", type=str, default="connected_components",
                         choices=["connected_components", "morphology"],
                         help="노이즈 필터링 방법 (기본값: connected_components)")
-    parser.add_argument("--min-component-size", type=int, default=50,
-                        help="최소 컴포넌트 크기 픽셀 수 (기본값: 50)")
+    parser.add_argument("--min-component-size", type=int, default=75,
+                        help="최소 컴포넌트 크기 픽셀 수 (기본값: 75)")
+    parser.add_argument("--test-fusion", action="store_true",
+                        help="Fusion 모드 테스트 활성화")
+    parser.add_argument("--blend-alpha", type=float, default=0.7,
+                        help="Fusion 모드의 블렌딩 가중치 (0.0~1.0, 기본값: 0.7)")
     args = parser.parse_args()
     
     success = verify_pipeline_e(
         save_outputs=not args.no_save,
         edge_method=args.edge_method,
         filter_method=args.filter_method,
-        min_component_size=args.min_component_size
+        min_component_size=args.min_component_size,
+        test_fusion=args.test_fusion,
+        blend_alpha=args.blend_alpha
     )
     sys.exit(0 if success else 1)

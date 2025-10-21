@@ -403,3 +403,105 @@ class TestPipelineEOptions:
         # (단, 이미지에 따라 다를 수 있으므로 부등호 방향만 확인하지 않음)
         # 적어도 둘 중 하나는 에지가 있어야 함
         assert edge_count_small >= 0 and edge_count_large >= 0
+
+
+class TestPipelineEFusion:
+    """Pipeline E의 fusion 기능을 테스트"""
+    
+    def test_blend_returns_grayscale_not_binary(self):
+        """blend_with_original=True면 이진 이미지가 아닌 그레이스케일을 반환해야 함"""
+        from src.hpe.pipelines.pipeline_e import process
+        
+        image = np.random.randint(0, 256, (100, 100, 3), dtype=np.uint8)
+        
+        result = process(image, blend_with_original=True)
+        
+        assert result.dtype == np.uint8
+        assert result.shape == (100, 100)
+        # 이진값이 아닌 다양한 그레이스케일 값이 있어야 함
+        unique_values = np.unique(result)
+        assert len(unique_values) > 2  # 0과 255만 있으면 안 됨
+    
+    def test_blend_without_flag_returns_binary(self):
+        """blend_with_original=False면 이진 이미지를 반환해야 함"""
+        from src.hpe.pipelines.pipeline_e import process
+        
+        image = np.random.randint(0, 256, (100, 100, 3), dtype=np.uint8)
+        
+        result = process(image, blend_with_original=False)
+        
+        # 0 또는 255만 있어야 함
+        unique_values = np.unique(result)
+        assert np.all(np.isin(unique_values, [0, 255]))
+    
+    def test_blend_alpha_affects_result(self):
+        """blend_alpha 값이 결과에 영향을 미쳐야 함"""
+        from src.hpe.pipelines.pipeline_e import process
+        
+        image = np.random.randint(0, 256, (100, 100, 3), dtype=np.uint8)
+        
+        result_low_alpha = process(
+            image, blend_with_original=True, blend_alpha=0.3
+        )
+        result_high_alpha = process(
+            image, blend_with_original=True, blend_alpha=0.9
+        )
+        
+        # 다른 alpha 값은 다른 결과를 생성해야 함
+        assert not np.array_equal(result_low_alpha, result_high_alpha)
+    
+    def test_blend_alpha_validation(self):
+        """blend_alpha는 0.0~1.0 범위여야 함"""
+        from src.hpe.pipelines.pipeline_e import process
+        import pytest
+        
+        image = np.random.randint(0, 256, (100, 100, 3), dtype=np.uint8)
+        
+        # 범위 밖의 값은 거부
+        with pytest.raises(ValueError, match="blend_alpha must be between"):
+            process(image, blend_with_original=True, blend_alpha=-0.1)
+        
+        with pytest.raises(ValueError, match="blend_alpha must be between"):
+            process(image, blend_with_original=True, blend_alpha=1.5)
+        
+        # 경계값은 허용
+        result_0 = process(image, blend_with_original=True, blend_alpha=0.0)
+        result_1 = process(image, blend_with_original=True, blend_alpha=1.0)
+        assert result_0.shape == result_1.shape == (100, 100)
+    
+    def test_blend_preserves_texture_from_original(self):
+        """블렌딩된 결과는 원본의 텍스처 정보를 보존해야 함"""
+        from src.hpe.pipelines.pipeline_e import process
+        
+        # 텍스처가 있고 에지도 있는 이미지 생성 (큰 사각형)
+        image = np.zeros((100, 100, 3), dtype=np.uint8)
+        # 배경에 노이즈 추가
+        image[:, :] = np.random.randint(80, 120, (100, 100, 3), dtype=np.uint8)
+        # 명확한 사각형 구조 추가
+        image[30:70, 30:70] = 200
+        
+        result_blend = process(
+            image, blend_with_original=True, blend_alpha=0.7
+        )
+        result_no_blend = process(
+            image, blend_with_original=False
+        )
+        
+        # 블렌딩된 결과가 더 많은 그레이스케일 정보를 가져야 함
+        unique_blend = len(np.unique(result_blend))
+        unique_no_blend = len(np.unique(result_no_blend))
+        assert unique_blend > unique_no_blend
+    
+    def test_blend_works_with_grayscale_input(self):
+        """그레이스케일 입력에도 블렌딩이 작동해야 함"""
+        from src.hpe.pipelines.pipeline_e import process
+        
+        gray_image = np.random.randint(0, 256, (100, 100), dtype=np.uint8)
+        
+        result = process(
+            gray_image, blend_with_original=True, blend_alpha=0.7
+        )
+        
+        assert result.dtype == np.uint8
+        assert result.shape == (100, 100)
+        assert len(np.unique(result)) > 2  # 그레이스케일 값들
