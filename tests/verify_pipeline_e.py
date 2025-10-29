@@ -20,7 +20,7 @@ from src.hpe.pipelines.pipeline_d import process as pipeline_d_process
 def verify_pipeline_e(
     save_outputs: bool = True,
     edge_method: str = "sobel",
-    filter_method: str = "morphology",
+    filter_method: str = "connected_components",
     min_component_size: int = 50,
     test_fusion: bool = False,
     blend_alpha: float = 0.7

@@ -74,6 +74,26 @@
    - 검증 스크립트: `tests/verify_pipeline_e.py` (실제 이미지로 동작 검증)
    - 목표: Pipeline D의 노이즈성 작은 점들을 제거하여 구조적 에지만 추출
 
+10.5. [ ] PIPELINE E-SK: 골격화된 경계 기반 출력
+   - 테스트: `pipeline_e_sk`가 1픽셀 두께의 골격화된 에지를 2D uint8(0 또는 255)로 반환.
+   - 구현: Pipeline E (고정 파라미터) → Skeletonization → 1픽셀 경계.
+   - 고정 파라미터: `edge_method='sobel'`, `filter_method='connected_components'`, `min_component_size=70`.
+   - 옵션: 
+     - `skeleton_method='zhang_suen'` (기본값): Zhang-Suen thinning (OpenCV, 빠름)
+     - `skeleton_method='morphological'`: Morphological skeleton (scikit-image, 정확)
+     - `skeleton_method='medial_axis'`: Medial axis transform (scikit-image, 중심선 보존)
+     - `skeleton_method='all'`: 세 가지 방법 모두 적용하여 Dict[str, np.ndarray]로 반환 (비교 분석용)
+   - 반환 타입: 단일 방법 시 np.ndarray, 'all' 시 Dict[str, np.ndarray]
+   - 테스트 파일: `tests/test_pipeline_e_sk.py` (최소 20개 테스트)
+   - 검증 스크립트: `tests/verify_pipeline_e_sk.py` (실제 이미지로 동작 검증)
+   - 목표: Pipeline E의 두꺼운 에지를 1픽셀 라인으로 변환하여 SuperPoint 특징점 검출 향상
+
+10.6. [x] PIPELINE F: 개선된 핵 중심 정합 (CLAHE 및 중간 저장)
+   - 테스트: `pipeline_f`가 CLAHE 적용된 헤마톡실린 채널을 반환하고, 중간 결과물을 저장하는지 확인.
+   - 구현: `pipeline_b` 기반으로, 단순 정규화를 CLAHE로 대체하고 중간 저장 옵션 추가.
+   - 테스트 파일: `tests/test_pipeline_f.py`
+   - 목표: 파이프라인 B의 대비를 개선하고, 중간 단계를 시각적으로 검증.
+
 11. [ ] METRICS: Feature Potential Score 계산기
    - 테스트 파일: `tests/test_metrics_feature_potential.py`
    - 테스트: grayscale 입력에서 코너/LoG 기반 스코어를 스칼라(float)로 반환.

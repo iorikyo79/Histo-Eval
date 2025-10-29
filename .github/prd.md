@@ -215,25 +215,126 @@
         return im_filtered.astype(np.uint8)
     ```
 
+#### **FR-9: 파이프라인 E-SK (골격화된 경계 기반 정합)**
+* **설명**: Pipeline E의 결과에 skeletonization을 적용하여 모든 경계를 1픽셀 두께의 라인으로 변환합니다. SuperPoint가 두꺼운 엣지 덩어리보다 명확한 라인 형태에서 특징점을 더 잘 검출할 것으로 기대합니다.
+* **주요 특징**:
+    * Pipeline E 출력 (고정 파라미터) → Skeletonization → 1픽셀 경계
+    * Pipeline E 고정 파라미터: `edge_method='sobel'`, `filter_method='connected_components'`, `min_component_size=70`
+    * 네 가지 골격화 옵션 지원:
+        - `skeleton_method='zhang_suen'` (기본값): Zhang-Suen thinning, 빠르고 효율적 (OpenCV)
+        - `skeleton_method='morphological'`: Morphological skeleton, 정확한 골격 추출 (scikit-image)
+        - `skeleton_method='medial_axis'`: Medial axis transform, 중심선 보존 (scikit-image)
+        - `skeleton_method='all'`: 세 가지 방법을 모두 적용하여 딕셔너리로 반환 (비교 분석용)
+* **샘플 코드**:
+    ```python
+    import cv2
+    import numpy as np
+    from typing import Union, Dict
+    from skimage.morphology import skeletonize, medial_axis
+    from pipeline_e import process as pipeline_e_process
+
+    def pipeline_e_sk(
+        im_rgb: np.ndarray, 
+        skeleton_method: str = "zhang_suen"
+    ) -> Union[np.ndarray, Dict[str, np.ndarray]]:
+        # 1. Apply Pipeline E with fixed parameters
+        im_edges = pipeline_e_process(
+            im_rgb,
+            edge_method="sobel",
+            filter_method="connected_components",
+            min_component_size=70
+        )
+        
+        # 2. Apply skeletonization
+        if skeleton_method == "all":
+            # Return all three methods for comparison
+            results = {}
+            results["zhang_suen"] = cv2.ximgproc.thinning(
+                im_edges, thinningType=cv2.ximgproc.THINNING_ZHANGSUEN
+            )
+            results["morphological"] = skeletonize(im_edges > 0).astype(np.uint8) * 255
+            results["medial_axis"] = medial_axis(im_edges > 0).astype(np.uint8) * 255
+            return results
+        
+        elif skeleton_method == "zhang_suen":
+            return cv2.ximgproc.thinning(
+                im_edges, thinningType=cv2.ximgproc.THINNING_ZHANGSUEN
+            )
+        elif skeleton_method == "morphological":
+            return skeletonize(im_edges > 0).astype(np.uint8) * 255
+        elif skeleton_method == "medial_axis":
+            return medial_axis(im_edges > 0).astype(np.uint8) * 255
+        else:
+            raise ValueError(f"Unknown skeleton_method: {skeleton_method}")
+    ```
+
+#### **FR-9.1: 파이프라인 F (개선된 핵 중심 정합)**
+* **설명**: 파이프라인 B의 변형으로, 단순한 0-255 정규화 대신 CLAHE를 적용하여 지역적 대비를 극대화하고, 색상 정규화된 중간 결과물을 저장하는 기능을 추가합니다.
+* **주요 특징**:
+    * Reinhard 색상 정규화 적용
+    * 정규화된 중간 이미지 저장 기능 (디버깅 및 검증용)
+    * 헤마톡실린 채널 추출 후, 단순 정규화 대신 CLAHE 적용으로 대비 향상
+* **샘플 코드**:
+    ```python
+    import numpy as np
+    import histomicstk as htk
+    from skimage.exposure import equalize_adapthist
+    from skimage.util import img_as_ubyte
+    from typing import Optional
+
+    def pipeline_f(
+        im_rgb: np.ndarray,
+        use_clog: bool = False,
+        normalized_save_path: Optional[str] = None
+    ) -> np.ndarray:
+        # 1. Color normalization
+        im_nmzd = htk.preprocessing.color_normalization.reinhard(
+            im_rgb, TARGET_MU, TARGET_SIGMA
+        )
+
+        # 2. (Optional) Save intermediate normalized image
+        if normalized_save_path:
+            imsave(normalized_save_path, img_as_ubyte(im_nmzd))
+
+        # 3. Color deconvolution
+        stain_color_map = htk.preprocessing.color_deconvolution.stain_color_map
+        w = np.array([stain_color_map['hematoxylin'], stain_color_map['eosin'], stain_color_map['null']]).T
+        im_stains = htk.preprocessing.color_deconvolution.color_deconvolution(im_nmzd, w).Stains
+        im_hematoxylin = im_stains[:, :, 0]
+
+        # 4. Apply CLAHE for contrast enhancement
+        h_min, h_max = im_hematoxylin.min(), im_hematoxylin.max()
+        if h_max > h_min:
+            hematoxylin_scaled = (im_hematoxylin - h_min) / (h_max - h_min)
+        else:
+            hematoxylin_scaled = np.full_like(im_hematoxylin, 0.5)
+        
+        im_enhanced = img_as_ubyte(equalize_adapthist(hematoxylin_scaled))
+
+        # 5. (Optional) Enhance nuclei centers with LoG filter
+        if use_clog:
+            # ... LoG filter logic ...
+            return ...
+
+        return im_enhanced
+    ```
+
 ### 2.3. 파이프라인 실행기 및 결과 생성기
-* **FR-9**: `run_evaluation.py` 스크립트를 통해 전체 평가 프로세스를 실행합니다.
-* **FR-9**: `run_evaluation.py` 스크립트를 통해 전체 평가 프로세스를 실행합니다.
-* **FR-10**: 평가할 파이프라인과 데이터셋 경로는 `config.yaml` 파일로 지정합니다.
-* **FR-11**: 각 이미지 쌍에 대해 선택된 파이프라인을 적용하고, **전처리된 결과 이미지를 지정된 경로에 저장**합니다.
-* **FR-12**: 전처리된 결과 이미지로부터 자체 평가 지표를 계산하고 결과를 저장합니다.
+* **FR-10**: `run_evaluation.py` 스크립트를 통해 전체 평가 프로세스를 실행합니다.
+* **FR-11**: 평가할 파이프라인과 데이터셋 경로는 `config.yaml` 파일로 지정합니다.
+* **FR-12**: 각 이미지 쌍에 대해 선택된 파이프라인을 적용하고, **전처리된 결과 이미지를 지정된 경로에 저장**합니다.
+* **FR-13**: 전처리된 결과 이미지로부터 자체 평가 지표를 계산하고 결과를 저장합니다.
 
 ### 2.4. 평가 지표 (Proxy Metrics)
-* **FR-13: 특징점 잠재력 (Feature Potential Score)**
+* **FR-14: 특징점 잠재력 (Feature Potential Score)**
     * LoG 필터 응답이나 FAST 코너 개수를 측정하여 이미지 내 특징점 후보의 풍부함을 정량화합니다.
-* **FR-13: 특징점 잠재력 (Feature Potential Score)**
-    * LoG 필터 응답이나 FAST 코너 개수를 측정하여 이미지 내 특징점 후보의 풍부함을 정량화합니다.
-* **FR-14: 이미지 엔트로피 (Image Entropy)**
+* **FR-15: 이미지 엔트로피 (Image Entropy)**
     * 이미지의 정보량을 측정하여 너무 단조롭거나 노이즈가 과하지 않은지 평가합니다.
-* **FR-15: 이미지 대비 (Image Contrast)**
+* **FR-16: 이미지 대비 (Image Contrast)**
     * RMS contrast 등을 측정하여 특징점 검출에 유리한 환경인지를 간접적으로 평가합니다.
 
 ### 2.5. 결과 리포팅
-* **FR-16**: 모든 실험 결과를 단일 CSV 파일로 출력하며, 컬럼은 다음과 같습니다.
+* **FR-17**: 모든 실험 결과를 단일 CSV 파일로 출력하며, 컬럼은 다음과 같습니다.
     > `image_pair_id`, `pipeline_name`, `output_path_source`, `output_path_target`, `feature_potential_score`, `image_entropy`, `image_contrast`, `processing_time`
 
 ---
@@ -257,6 +358,7 @@
 * **Phase 2: 전체 파이프라인 완성 및 테스트**
     * **파이프라인 C (텍스처 중심)** 구현
     * **파이프라인 D (경계 기반)** 및 **파이프라인 E (노이즈 필터링)** 구현
+    * **파이프라인 E-SK (골격화된 경계 기반)** 구현
     * 샘플 데이터셋에 대한 전체 파이프라인 실행 및 결과 리포팅 기능 검증
     * `README.md` 문서 초안 작성 및 코드 리뷰
 
